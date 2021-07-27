@@ -1,0 +1,52 @@
+version: "3.7"
+services:
+  app:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+    container_name: coach_calendar-app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+    networks:
+      - coach_calendar
+
+  db:
+    image: mysql:8.0.25
+    container_name: coach_calendar-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+    volumes:
+      - ./docker/mysql:/docker-entrypoint-initdb.d
+      - ./docker/mysql/data:/var/lib/mysql
+    ports:
+      - "33061:3306"
+    networks:
+      - coach_calendar
+
+  nginx:
+    image: nginx:alpine
+    container_name: coach_calendar-nginx
+    restart: unless-stopped
+    ports:
+      - 8087:80
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d/
+    networks:
+      - coach_calendar
+
+  redis:
+    image: redis:4.0
+    ports:
+      - "6382:6379"
+    networks:
+      - coach_calendar
+networks:
+  coach_calendar:
+    driver: bridge

@@ -1,0 +1,17 @@
+stages:
+  - deploy
+before_script:
+  - apt-get update -qq
+  - apt-get install -qq git
+  # Setup SSH deploy keys
+  - 'which ssh-agent || ( apt-get install -qq openssh-client )'
+  - eval $(ssh-agent -s)
+  - ssh-add <(echo "$SSH_PRIVATE_KEY" | base64 -d)
+  - mkdir -p ~/.ssh
+  - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+deploy:
+  stage: deploy
+  script:
+    - ssh webuser@178.151.241.194 -p 22226 "cd /home/webuser/projects/coachcalendar-backend-07-2021 && git checkout develop && git pull origin develop && docker-compose down && docker-compose up -d && docker-compose exec -T app composer install && docker-compose exec -T app php artisan migrate --seed && exit"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
